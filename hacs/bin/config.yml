@@ -1,0 +1,13 @@
+paths:
+  input_dir: /project/videos
+  metadata_file: /project/data/auxiliary/HACS_clips_v1.1.csv
+  fasttext_model: /project/models/crawl-300d-2M-subword.bin
+  fasttext_mapping: /project/data/processed/fasttext_mapping.pkl
+  training_file: /project/videos_processed/training.h5
+  validation_file: /project/videos_processed/validation.h5
+  output_dir: /project/videos
+
+processing:
+  threads_num: 6
+  batch_size: 96
+  img_size: !!python/tuple [200, 200]

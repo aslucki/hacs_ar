@@ -1,0 +1,7 @@
+models
+data
+/bin
+.idea
+*.egg*
+.pytest_cache
+__pycache__
