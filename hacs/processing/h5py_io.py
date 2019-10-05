@@ -10,6 +10,8 @@ def retrieve_n_last_id(datafile_path, n, key='video_ids'):
 
 def find_index(metadata, datafile_path, key='youtube_id'):
     last_item = retrieve_n_last_id(datafile_path=datafile_path, n=1)
+    found_index = int(last_item.split('_')[0])
+    '''
     candidates = metadata[metadata[key] == last_item]
 
     if len(candidates) == 1:
@@ -21,7 +23,7 @@ def find_index(metadata, datafile_path, key='youtube_id'):
             if previous_item == last_item:
                 found_index = candidates.iloc[i - 1].name
                 break
-
+    '''
     return metadata.index.get_loc(found_index)
 
 
@@ -39,9 +41,13 @@ def _create_dataset(file_handle, ds_name, data):
         dataset = \
             file_handle.create_dataset(ds_name,
                                        maxshape=(None,) + data.shape[1:],
-                                       data=data, dtype='<U3')
+                                       data=data)
     except TypeError:
-        dtype = h5py.string_dtype(encoding='utf-8')
+        if issubclass(data.dtype.type, str):
+            dtype = h5py.string_dtype(encoding='utf-8')
+        else:
+            raise TypeError
+
         dataset = file_handle.create_dataset(ds_name, shape=data.shape,
                                              maxshape=(None,) + data.shape[1:],
                                              dtype=dtype)

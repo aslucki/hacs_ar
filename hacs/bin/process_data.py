@@ -1,5 +1,6 @@
 import os
 import threading
+from multiprocessing import Process, Queue
 
 import fire
 import numpy as np
@@ -11,6 +12,7 @@ import yaml
 from hacs.processing import FrameExtractor, save_to_hdf5
 from hacs.processing.h5py_io import find_index
 
+import pickle
 
 def get_start_index(output_path, metadata):
     start_index = 0
@@ -69,7 +71,7 @@ def classes_to_one_hot(mapping, class_names):
         index = mapping['class_to_index'][classname]
         one_hot_labels.append(index_to_onehot(mapping['num_classes'], index))
 
-    return np.asarray(one_hot_labels)
+    return np.asarray(one_hot_labels, dtype=np.uint8)
 
 
 def classes_to_fasstext(fasttext_mapping, class_names):
@@ -82,9 +84,14 @@ def classes_to_fasstext(fasttext_mapping, class_names):
 
 def _insert_video_output(index, video_path, img_size, output):
     result = FrameExtractor.video_to_frames(video_path,
-                                            image_size=img_size)
+                                            image_size=img_size,
+                                            constant_num_frames=60)
+    
     if result is not None:
-        output[index] = result.frames
+        frames = result.frames
+        if frames.shape[0] == 60:
+            encoded = FrameExtractor.encode_frames(frames)
+            output[index] = encoded
 
     return None
 
@@ -126,24 +133,32 @@ def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch
 
             class_names.append(classname)
             labels.append(label)
-            video_ids.append(youtube_id)
+            video_ids.append("{}_{}".format(index, youtube_id))
 
         video_paths = np.asarray(video_paths)
         valid_indices = np.where(video_paths != None)
         valid_paths = video_paths[valid_indices]
 
-        processed_videos = None
-        processed_videos = process_videos(valid_paths, threads_num=threads_num, img_size=img_size)
-        new_valid_indices = np.asarray([i for i, video in enumerate(processed_videos) if video is not None])
+        processed_videos_org = None
+        processed_videos_org = process_videos(valid_paths, threads_num=threads_num, img_size=img_size)
+        new_valid_indices = np.asarray([i for i, video in enumerate(processed_videos_org)
+                                        if video is not None])
         class_names = np.asarray(class_names)[valid_indices][new_valid_indices]
+
+        processed_videos = np.asarray([video for video in processed_videos_org
+                                       if video is not None])
+
+        if len(processed_videos.shape) != 2:
+            print("Wrong shape, discarding batch.")
+            continue
 
         batch = {
             'class_names': class_names,
-            'labels': np.asarray(labels)[valid_indices][new_valid_indices],
+            'labels': np.asarray(labels, dtype=np.int8)[valid_indices][new_valid_indices],
             'video_ids': np.asarray(video_ids)[valid_indices][new_valid_indices],
             'one_hot': classes_to_one_hot(class_mapping, class_names),
             'fasttext_vector': classes_to_fasstext(fasttext_mapping, class_names),
-            'frames': processed_videos[new_valid_indices]
+            'frames': processed_videos
         }
 
         yield batch
@@ -191,7 +206,7 @@ def process_data(config_path):
                                       start_index=validation_start_index)
 
     save_batches(trainig_gen, config['paths']['training_file'])
-    save_batches(validation_gen, config['paths']['validation_file'])
+    #save_batches(validation_gen, config['paths']['validation_file'])
 
 
 if __name__ == "__main__":

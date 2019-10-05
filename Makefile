@@ -15,6 +15,7 @@ dev:
 
 lab:
 	docker run --rm -ti  \
+		--runtime=nvidia \
 		-p $(PORT):$(PORT) \
 		-v $(PWD)/:/project \
 		-v /media/storage/HACS-dataset/processed/:/project/videos_processed \

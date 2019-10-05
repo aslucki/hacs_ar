@@ -8,6 +8,6 @@ paths:
   output_dir: /project/videos
 
 processing:
-  threads_num: 6
+  threads_num: 8
   batch_size: 96
-  img_size: !!python/tuple [200, 200]
+  img_size: !!python/tuple [172, 128]
