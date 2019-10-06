@@ -11,3 +11,24 @@ processing:
   threads_num: 8
   batch_size: 96
   img_size: !!python/tuple [172, 128]
+  constant_num_frames: 60
+
+training:
+  model_name: original
+  use_negative_labels: False
+  data_file_keys:
+    classes: one_hot
+    frames: frames
+    labels: labels
+  batch_size: 20
+  epochs: 1
+  optimizer: Adam
+  losses:
+    - categorical_crossentropy
+  metrics:
+    - acc
+  training_file: /project/videos_processed/training.h5
+  validation_file: /project/videos_processed/validation.h5
+  output_dir: /project/models
+
+

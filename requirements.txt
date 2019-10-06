@@ -4,6 +4,8 @@ fire
 flake8==3.5.0
 h5py==2.10.0
 jupyterlab==0.35.6
+keras-rectified-adam==0.17.0
+matplotlib
 memory-profiler
 numpy==1.17.1
 tensorflow-gpu==2.0.0-rc0

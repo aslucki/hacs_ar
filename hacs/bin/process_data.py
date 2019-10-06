@@ -9,10 +9,9 @@ import pickle
 from tqdm import tqdm
 import yaml
 
-from hacs.processing import FrameExtractor, save_to_hdf5
-from hacs.processing.h5py_io import find_index
+from hacs.processing.frame_extractor import video_to_frames, encode_frames
+from hacs.processing.h5py_io import find_index, save_to_hdf5
 
-import pickle
 
 def get_start_index(output_path, metadata):
     start_index = 0
@@ -82,21 +81,20 @@ def classes_to_fasstext(fasttext_mapping, class_names):
     return np.asarray(vectors)
 
 
-def _insert_video_output(index, video_path, img_size, output):
-    result = FrameExtractor.video_to_frames(video_path,
-                                            image_size=img_size,
-                                            constant_num_frames=60)
+def _insert_video_output(index, video_path, img_size, output, constant_num_frames=60):
+    result = video_to_frames(video_path, image_size=img_size,
+                             constant_num_frames=constant_num_frames)
     
     if result is not None:
         frames = result.frames
         if frames.shape[0] == 60:
-            encoded = FrameExtractor.encode_frames(frames)
+            encoded = encode_frames(frames)
             output[index] = encoded
 
     return None
 
 
-def process_videos(paths, threads_num=8, img_size=(200, 200)):
+def process_videos(paths, threads_num=8, img_size=(200, 200), constant_num_frames=60):
 
     processed_videos = [None] * len(paths)
     threads = []
@@ -105,7 +103,7 @@ def process_videos(paths, threads_num=8, img_size=(200, 200)):
             for thread in threads:
                 thread.join()
         thread = threading.Thread(target=_insert_video_output,
-                                  args=(i, str(path), img_size, processed_videos))
+                                  args=(i, str(path), img_size, processed_videos, constant_num_frames))
         threads.append(thread)
         thread.start()
 
@@ -115,7 +113,7 @@ def process_videos(paths, threads_num=8, img_size=(200, 200)):
 
 
 def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch_size=32,
-                     threads_num=8, img_size=(200, 200), start_index=0):
+                     threads_num=8, img_size=(200, 200), start_index=0, constant_num_frames=60):
 
     print("Starting processing from {}th row in metadata".format(start_index))
     for i in tqdm(range(start_index, len(metadata), batch_size)):
@@ -140,7 +138,8 @@ def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch
         valid_paths = video_paths[valid_indices]
 
         processed_videos_org = None
-        processed_videos_org = process_videos(valid_paths, threads_num=threads_num, img_size=img_size)
+        processed_videos_org = process_videos(valid_paths, threads_num=threads_num, img_size=img_size,
+                                              constant_num_frames=constant_num_frames)
         new_valid_indices = np.asarray([i for i, video in enumerate(processed_videos_org)
                                         if video is not None])
         class_names = np.asarray(class_names)[valid_indices][new_valid_indices]
@@ -194,7 +193,8 @@ def process_data(config_path):
                                    batch_size=config['processing']['batch_size'],
                                    img_size=config['processing']['img_size'],
                                    threads_num=config['processing']['threads_num'],
-                                   start_index=train_start_index)
+                                   start_index=train_start_index,
+                                   constant_num_frames=config['processing']['constant_num_frames'])
 
     validation_gen = generate_batches(config['paths']['input_dir'],
                                       class_mapping,
@@ -203,10 +203,11 @@ def process_data(config_path):
                                       batch_size=config['processing']['batch_size'],
                                       img_size=config['processing']['img_size'],
                                       threads_num=config['processing']['threads_num'],
-                                      start_index=validation_start_index)
+                                      start_index=validation_start_index,
+                                      constant_num_frames=config['processing']['constant_num_frames'])
 
     save_batches(trainig_gen, config['paths']['training_file'])
-    #save_batches(validation_gen, config['paths']['validation_file'])
+    save_batches(validation_gen, config['paths']['validation_file'])
 
 
 if __name__ == "__main__":
