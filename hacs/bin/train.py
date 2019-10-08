@@ -6,6 +6,9 @@ import shutil
 import sys
 import yaml
 
+import numpy as np
+import tensorflow as tf
+
 from hacs.training.trainers import C3DTrainer
 from hacs.models.c3d import get_model
 
@@ -34,7 +37,7 @@ def save_history(experiment_dir, history):
 
     suffix = len(history_files)
     with open(os.path.join(experiment_dir, f"history_{suffix}.pkl"), 'wb') as f:
-        pickle.dump(history, f)
+        pickle.dump(history.history, f)
 
 
 def train_model(config_path):
@@ -71,4 +74,7 @@ def train_model(config_path):
 
 
 if __name__ == '__main__':
+    np.random.seed(42)
+    tf.random.set_seed(42)
+
     fire.Fire(train_model)

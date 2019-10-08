@@ -69,9 +69,55 @@ def data_generator(file_handle, data_file_keys, yield_labels=False, batch_size=1
             if yield_labels:
                 labels = file_handle[data_file_keys['labels']][index:index + batch_size]
                 one_hot = labes_to_onehot(labels)
+                index += batch_size
                 yield np.asarray(frames), [classes, one_hot]
 
+            index += batch_size
             yield np.asarray(frames), classes
 
+        except ValueError:
+            index = 0
+
+
+def create_frames_array(videos, nb_frames):
+
+    frames = []
+    for video in videos:
+        decoded = decode_frames(video)
+        last_frame = find_last_frame(decoded)
+        start_frame = np.random.randint(0, last_frame - nb_frames, size=1)[0]
+        cropped = crop_frames(decoded[start_frame:start_frame + nb_frames])
+        frames.append(cropped)
+
+    return np.asarray(frames)
+
+
+def data_generator_with_shuffle(file_handle, data_file_keys, yield_labels=False, batch_size=1, nb_frames=16,
+                                batch_to_shuffle=1000):
+    index = 0
+    while True:
+        try:
+            indices = np.arange(batch_to_shuffle, dtype=int)
+            np.random.shuffle(indices)
+
+            classes = file_handle[data_file_keys['classes']][index:index + batch_to_shuffle][indices]
+            videos = file_handle['frames'][index:index + batch_to_shuffle][indices]
+
+            if yield_labels:
+                labels = file_handle[data_file_keys['labels']][index:index + batch_to_shuffle][indices]
+
+            for i in range(0, batch_to_shuffle, batch_size):
+                batch_classes = classes[i:i + batch_size]
+                batch_videos = videos[i:i + batch_size]
+                frames = create_frames_array(batch_videos, nb_frames=nb_frames)
+
+                if yield_labels:
+                    batch_labels = labels[i:i + batch_size]
+                    one_hot = labes_to_onehot(batch_labels)
+                    yield frames, [classes, one_hot]
+
+                yield frames, batch_classes
+
+            index += batch_to_shuffle
         except ValueError:
             index = 0

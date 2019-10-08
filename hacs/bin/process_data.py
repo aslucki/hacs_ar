@@ -1,6 +1,5 @@
 import os
 import threading
-from multiprocessing import Process, Queue
 
 import fire
 import numpy as np
@@ -86,30 +85,39 @@ def _insert_video_output(index, video_path, img_size, output, constant_num_frame
                              constant_num_frames=constant_num_frames)
     
     if result is not None:
-        frames = result.frames
-        if frames.shape[0] == 60:
-            encoded = encode_frames(frames)
-            output[index] = encoded
+        encoded = encode_frames(result.frames)
+        output[index] = encoded
 
     return None
 
 
 def process_videos(paths, threads_num=8, img_size=(200, 200), constant_num_frames=60):
-
     processed_videos = [None] * len(paths)
     threads = []
     for i, path in enumerate(paths):
-        if i != 0 and i % threads_num == 0:
-            for thread in threads:
-                thread.join()
         thread = threading.Thread(target=_insert_video_output,
                                   args=(i, str(path), img_size, processed_videos, constant_num_frames))
         threads.append(thread)
-        thread.start()
 
-    [t.join() for t in threads]
+    for i in range(0, len(paths), threads_num):
+        selected_threads = threads[i:i+threads_num]
+        [t.start() for t in selected_threads]
+        [t.join() for t in selected_threads]
 
     return np.asarray(processed_videos)
+
+
+"""
+def process_videos(paths, threads_num=8, img_size=(200, 200), constant_num_frames=60):
+    processed_videos = []
+    for path in paths:
+        processed = video_to_frames(path, image_size=(100, 100), constant_num_frames=40)
+        encoded = encode_frames(processed.frames)
+        processed_videos.append(encoded)
+    processed_videos = np.asarray(processed_videos)
+
+    return processed_videos
+"""
 
 
 def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch_size=32,
@@ -137,20 +145,17 @@ def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch
         valid_indices = np.where(video_paths != None)
         valid_paths = video_paths[valid_indices]
 
-        processed_videos_org = None
         processed_videos_org = process_videos(valid_paths, threads_num=threads_num, img_size=img_size,
                                               constant_num_frames=constant_num_frames)
         new_valid_indices = np.asarray([i for i, video in enumerate(processed_videos_org)
                                         if video is not None])
-        class_names = np.asarray(class_names)[valid_indices][new_valid_indices]
-
         processed_videos = np.asarray([video for video in processed_videos_org
                                        if video is not None])
 
-        if len(processed_videos.shape) != 2:
-            print("Wrong shape, discarding batch.")
+        if len(new_valid_indices) == 0:
             continue
 
+        class_names = np.asarray(class_names)[valid_indices][new_valid_indices]
         batch = {
             'class_names': class_names,
             'labels': np.asarray(labels, dtype=np.int8)[valid_indices][new_valid_indices],

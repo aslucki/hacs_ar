@@ -4,7 +4,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.models import load_model
 from keras_radam.training import RAdamOptimizer
 
-from .data_generators import data_generator
+from .data_generators import data_generator, data_generator_with_shuffle
 
 
 class C3DTrainer:
@@ -47,9 +47,9 @@ class C3DTrainer:
         return int(max_len/batch_size)
 
     def get_generator(self, file_handle, batch_size=24):
-        generator = data_generator(file_handle, self._data_file_keys,
-                                   yield_labels=self._use_labels,
-                                   batch_size=batch_size)
+        generator = data_generator_with_shuffle(file_handle, self._data_file_keys,
+                                                yield_labels=self._use_labels,
+                                                batch_size=batch_size)
         return generator
 
     def train(self, train_file_handle, validation_file_handle, epochs=10, batch_size=24):
@@ -58,7 +58,10 @@ class C3DTrainer:
         early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=5,
                                                 mode='auto')
 
-        train_gen = self.get_generator(train_file_handle, batch_size)
+        train_gen = self.get_generator(train_file_handle, 2)
+        next(train_gen)
+        return None
+
         validation_gen = self.get_generator(validation_file_handle, batch_size)
 
         steps_per_epoch = self.calculate_nb_steps(train_file_handle, batch_size)
