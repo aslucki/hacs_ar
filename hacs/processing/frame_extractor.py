@@ -30,10 +30,9 @@ def video_to_frames(file_path, image_size=None, constant_num_frames=None):
         padded_frames[:len(frames)] = frames
         frames = padded_frames
 
-    video_data = namedtuple('video_data', 'frames keyframes')
     cap.release()
 
-    return video_data(frames=frames, keyframes=frames[::5])
+    return frames
 
 
 def encode_frames(frames):

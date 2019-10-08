@@ -4,7 +4,7 @@ paths:
   fasttext_model: /project/models/crawl-300d-2M-subword.bin
   fasttext_mapping: /project/data/processed/fasttext_mapping.pkl
   training_file: /project/videos_processed/training.h5
-  validation_file: /project/videos_processed/validation.h5
+  validation_file: /project/videos_processed/tt_validation.h5
   output_dir: /project/videos
 
 processing:

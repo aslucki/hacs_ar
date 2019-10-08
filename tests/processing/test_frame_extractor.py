@@ -14,9 +14,8 @@ def test_extract_frames():
 
         try:
             output = video_to_frames(VIDEO_PATH, (size, size))
-            assert output.frames.shape[1:] == (size, size, 3)
-            assert len(output.frames) > len(output.keyframes)
-            assert len(output.frames.shape) == 4
+            assert output.shape[1:] == (size, size, 3)
+            assert len(output.shape) == 4
 
         except ValueError:
             pass
@@ -27,11 +26,11 @@ def test_multiple_query():
     output1 = video_to_frames(VIDEO_PATH, (100, 100))
     output2 = video_to_frames(VIDEO_PATH, (100, 100))
 
-    assert np.all(output1.frames == output2.frames)
+    assert np.all(output1 == output2)
 
 
 def test_encoding():
     frames = video_to_frames(VIDEO_PATH, (100, 100))
-    encoded = encode_frames(frames.frames)
+    encoded = encode_frames(frames)
 
     assert b'\xff\xd8\xff\xe0' not in encoded

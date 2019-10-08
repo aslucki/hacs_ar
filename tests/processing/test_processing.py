@@ -6,7 +6,6 @@ import pandas as pd
 
 import hacs.bin.process_data as processing
 from hacs.processing import save_to_hdf5
-from hacs.processing.frame_extractor import video_to_frames
 
 VIDEOS = os.path.join(os.path.dirname(__file__), 'data', 'hacs_videos')
 METADATA = os.path.join(os.path.dirname(__file__), 'data', 'hacs_test.csv')
@@ -24,9 +23,6 @@ def get_fasttext_mapping():
 def compare_known_data(processing_output, metadata, yt_id):
     known_record = metadata[metadata.youtube_id == yt_id]
     index = known_record.index.values[-1]
-    video_path = os.path.join(os.path.dirname(__file__), 'data', 'hacs_videos',
-                              known_record.classname.values[-1].replace(" ", "_"),
-                              "v_{}_{}.mp4".format(index, yt_id))
 
     assert processing_output['labels'][index] == known_record.label.values[-1]
     assert yt_id in processing_output['video_ids'][index]

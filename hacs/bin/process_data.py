@@ -9,13 +9,13 @@ from tqdm import tqdm
 import yaml
 
 from hacs.processing.frame_extractor import video_to_frames, encode_frames
-from hacs.processing.h5py_io import find_index, save_to_hdf5
+from hacs.processing.h5py_io import get_index_of_last_item, save_to_hdf5
 
 
 def get_start_index(output_path, metadata):
     start_index = 0
     if os.path.isfile(output_path):
-        start_index = find_index(metadata, output_path)
+        start_index = get_index_of_last_item(metadata, output_path)
 
     return start_index
 
@@ -85,7 +85,7 @@ def _insert_video_output(index, video_path, img_size, output, constant_num_frame
                              constant_num_frames=constant_num_frames)
     
     if result is not None:
-        encoded = encode_frames(result.frames)
+        encoded = encode_frames(result)
         output[index] = encoded
 
     return None
@@ -105,19 +105,6 @@ def process_videos(paths, threads_num=8, img_size=(200, 200), constant_num_frame
         [t.join() for t in selected_threads]
 
     return np.asarray(processed_videos)
-
-
-"""
-def process_videos(paths, threads_num=8, img_size=(200, 200), constant_num_frames=60):
-    processed_videos = []
-    for path in paths:
-        processed = video_to_frames(path, image_size=(100, 100), constant_num_frames=40)
-        encoded = encode_frames(processed.frames)
-        processed_videos.append(encoded)
-    processed_videos = np.asarray(processed_videos)
-
-    return processed_videos
-"""
 
 
 def generate_batches(base_path, class_mapping, fasttext_mapping, metadata, batch_size=32,

@@ -1,3 +1,5 @@
+import os
+
 import h5py
 import numpy as np
 
@@ -8,7 +10,7 @@ def retrieve_n_last_id(datafile_path, n, key='video_ids'):
     return last
 
 
-def find_index(metadata, datafile_path):
+def get_index_of_last_item(metadata, datafile_path):
     last_item = retrieve_n_last_id(datafile_path=datafile_path, n=1)
     found_index = int(last_item.split('_')[0])
 
@@ -26,6 +28,9 @@ def _create_dataset(file_handle, ds_name, data):
     data = _convert_list(data)
 
     try:
+
+        if issubclass(data.dtype.type, bytes):
+            data = np.void(data)  # byte strings aren't handled properly
         dataset = \
             file_handle.create_dataset(ds_name,
                                        maxshape=(None,) + data.shape[1:],
@@ -53,9 +58,6 @@ def save_to_hdf5(data: dict, output_file):
     with h5py.File(output_file, 'a') as file_handle:
         for ds_name, values in data.items():
             if ds_name not in file_handle.keys():
-                if ds_name == 'frames':
-                    # TODO: hack, should be handled properly
-                    values = np.void(values)
                 _create_dataset(file_handle, ds_name, data=values)
 
             else:
@@ -64,8 +66,3 @@ def save_to_hdf5(data: dict, output_file):
                 start_index = dataset.shape[0]
                 _resize_dataset(dataset, values.shape[0])
                 dataset[start_index:] = values
-
-
-
-
-
