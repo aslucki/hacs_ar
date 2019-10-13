@@ -51,7 +51,8 @@ def train_model(config_path):
     trainer = C3DTrainer(model=model,
                          use_labels=config['training']['use_negative_labels'],
                          data_file_keys=config['training']['data_file_keys'],
-                         output_dir=experiment_output_dir)
+                         output_dir=experiment_output_dir,
+                         initial_learning_rate=config['training']['learning_rate'])
 
     trainer.compile_model(optimizer=config['training']['optimizer'],
                           losses=config['training']['losses'],

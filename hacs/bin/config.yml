@@ -20,9 +20,10 @@ training:
     classes: one_hot
     frames: frames
     labels: labels
-  batch_size: 20
-  epochs: 1
-  optimizer: Adam
+  batch_size: 12
+  epochs: 20
+  learning_rate: 0.003
+  optimizer: sgd
   losses:
     - categorical_crossentropy
   metrics:
