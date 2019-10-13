@@ -19,7 +19,7 @@ tensorboard:
 		-v $(PWD)/:/project \
 		-w '/project' \
 		$(IMAGE_NAME) \
-		tensorboard --logdir=logs --host=0.0.0.0 --port=$(PORT)
+		tensorboard --logdir=/project/models/original/logs --host=0.0.0.0 --port=$(PORT)
 
 lab:
 	docker run --rm -ti  \

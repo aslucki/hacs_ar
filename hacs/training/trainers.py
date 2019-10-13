@@ -3,26 +3,20 @@ import os
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import load_model
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from keras_radam.training import RAdamOptimizer
 
-from .data_generators import data_generator, data_generator_with_shuffle, data_generator_labels
+from hacs.training.data_generator.hacs_generator import HacsGenerator, HacsGeneratorPartial
 
 
 class C3DTrainer:
-    def __init__(self, model, use_labels, data_file_keys, output_dir, initial_learning_rate):
+    def __init__(self, model, use_labels, data_file_keys, output_dir, learning_rate):
         self._model = model
         self._use_labels = use_labels
         self._data_file_keys = data_file_keys
         self._output_dir = output_dir
         self._initial_epoch = 0
-        self._initial_learning_rate = initial_learning_rate
-
-    def _lr_schedule(self, epoch):
-        if epoch == 0:
-            lr = self._initial_learning_rate
-        else:
-            lr = self._initial_learning_rate/epoch
-        return lr
+        self._learning_rate = learning_rate
 
     def _maybe_load_checkpoint(self):
         model_files = [file for file in os.listdir(self._output_dir)
@@ -41,56 +35,60 @@ class C3DTrainer:
 
     def compile_model(self, optimizer, losses, metrics):
         self._maybe_load_checkpoint()
+
         if optimizer.lower() == 'radam':
-            optimizer = RAdamOptimizer(total_steps=5000, warmup_proportion=0.1, min_lr=1e-5)
+            optimizer = RAdamOptimizer(total_steps=1000, warmup_proportion=0.1,
+                                       learning_rate=self._learning_rate,
+                                       min_lr=1e-5)
+        elif optimizer.lower() == 'adam':
+            optimizer = Adam(lr=self._learning_rate)
+        elif optimizer.lower() == 'sgd':
+            optimizer = SGD(lr=self._learning_rate, momentum=0.3)
+        elif optimizer.lower() == 'rmsprop':
+            optimizer = RMSprop(lr=self._learning_rate)
+
         return self._model.compile(optimizer=optimizer, loss=losses, metrics=metrics)
 
-    def calculate_nb_steps(self, file_handle, batch_size, samples_to_cache=1000):
-        if self._use_labels:
-            lens = []
-            for k in file_handle.keys():
-                lens.append(len(file_handle[k]))
-            nb_samples = max(lens)
-
+    def get_generator(self, file_handle, batch_size=24, validation=False):
+        if validation:
+            generator = HacsGenerator(file_handle,  self._data_file_keys,
+                                      use_negative_samples=self._use_labels,
+                                      batch_size=batch_size,
+                                      shuffle=False)
         else:
-            nb_samples = 0
-            for i in range(0, len(file_handle[self._data_file_keys['labels']]), samples_to_cache):
-                temp = file_handle[self._data_file_keys['labels']][i:i + samples_to_cache]
-                nb_samples += len(temp[temp == 1])
+            generator = HacsGeneratorPartial(file_handle,  self._data_file_keys,
+                                             use_negative_samples=self._use_labels,
+                                             batch_size=batch_size,
+                                             shuffle=True)
 
-        return int(nb_samples/batch_size)
-
-    def get_generator(self, file_handle, batch_size=24):
-        generator = data_generator_labels(file_handle, self._data_file_keys,
-                                          yield_labels=self._use_labels,
-                                          batch_size=batch_size)
         return generator
 
     def train(self, train_file_handle, validation_file_handle, epochs=10, batch_size=24):
         file_path = os.path.join(self._output_dir, 'model_{epoch:02d}_{val_loss:.2f}.h5')
         checkpoint_callback = ModelCheckpoint(file_path, monitor='val_loss', save_best_only=True)
-        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=10,
+        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=20,
                                                 mode='auto')
-        tensorboard_callback = TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=batch_size,
+
+        tensorboard_callback = TensorBoard(log_dir=os.path.join(self._output_dir, 'logs'), histogram_freq=1,
+                                           batch_size=batch_size,
                                            write_grads=True, write_images=True,
                                            update_freq='epoch')
 
         train_gen = self.get_generator(train_file_handle, batch_size)
-        validation_gen = self.get_generator(validation_file_handle, batch_size)
-
-        steps_per_epoch = int(self.calculate_nb_steps(train_file_handle, batch_size)/40)
-        validation_steps = int(self.calculate_nb_steps(validation_file_handle, batch_size)/40)
+        validation_gen = self.get_generator(validation_file_handle, batch_size, validation=True)
 
         print(f'Will train for {epochs} epochs with batch size equal to {batch_size}')
-        print(f'Will process {steps_per_epoch} steps per epoch')
-        print(f'Will process {validation_steps} validation steps')
+        print(f'Will process {len(train_gen)} steps per epoch')
+        print(f'Will process {len(validation_gen)} validation steps')
         print(self._model.loss)
+        print(self._model.summary())
+
         history = self._model.fit_generator(generator=train_gen,
-                                            steps_per_epoch=steps_per_epoch,
                                             epochs=epochs,
                                             initial_epoch=self._initial_epoch,
                                             validation_data=validation_gen,
-                                            validation_steps=validation_steps,
+                                            use_multiprocessing=True,
+                                            workers=6,
                                             callbacks=[checkpoint_callback, early_stopping_callback,
                                                        tensorboard_callback])
 

@@ -52,14 +52,14 @@ def train_model(config_path):
                          use_labels=config['training']['use_negative_labels'],
                          data_file_keys=config['training']['data_file_keys'],
                          output_dir=experiment_output_dir,
-                         initial_learning_rate=config['training']['learning_rate'])
+                         learning_rate=config['training']['learning_rate'])
 
     trainer.compile_model(optimizer=config['training']['optimizer'],
                           losses=config['training']['losses'],
                           metrics=config['training']['metrics'])
 
-    training_file = h5py.File(config['training']['training_file'], 'r')
-    validation_file = h5py.File(config['training']['validation_file'], 'r')
+    training_file = config['training']['training_file']
+    validation_file = config['training']['validation_file']
 
     try:
         history = trainer.train(training_file, validation_file, epochs=config['training']['epochs'],
@@ -70,8 +70,8 @@ def train_model(config_path):
 
     finally:
         save_history(experiment_output_dir, history)
-        training_file.close()
-        validation_file.close()
+        #training_file.close()
+        #validation_file.close()
 
 
 if __name__ == '__main__':
