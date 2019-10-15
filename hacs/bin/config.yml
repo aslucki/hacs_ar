@@ -20,7 +20,7 @@ training:
     classes: one_hot
     frames: frames
     labels: labels
-  batch_size: 14
+  batch_size: 12
   epochs: 150
   learning_rate: 0.003
   optimizer: radam

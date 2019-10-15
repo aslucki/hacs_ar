@@ -70,8 +70,6 @@ def train_model(config_path):
 
     finally:
         save_history(experiment_output_dir, history)
-        #training_file.close()
-        #validation_file.close()
 
 
 if __name__ == '__main__':

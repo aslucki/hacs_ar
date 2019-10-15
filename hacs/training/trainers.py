@@ -50,17 +50,15 @@ class C3DTrainer:
         return self._model.compile(optimizer=optimizer, loss=losses, metrics=metrics)
 
     def get_generator(self, file_handle, batch_size=24, validation=False):
+        samples_per_part = 10000
         if validation:
-            generator = HacsGenerator(file_handle,  self._data_file_keys,
-                                      use_negative_samples=self._use_labels,
-                                      batch_size=batch_size,
-                                      shuffle=False)
-        else:
-            generator = HacsGeneratorPartial(file_handle,  self._data_file_keys,
-                                             use_negative_samples=self._use_labels,
-                                             batch_size=batch_size,
-                                             shuffle=True)
+            samples_per_part = 2000
 
+        generator = HacsGeneratorPartial(file_handle,  self._data_file_keys,
+                                         use_negative_samples=self._use_labels,
+                                         batch_size=batch_size,
+                                         shuffle=True,
+                                         samples_per_part=samples_per_part)
         return generator
 
     def train(self, train_file_handle, validation_file_handle, epochs=10, batch_size=24):

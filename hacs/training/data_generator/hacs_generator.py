@@ -19,19 +19,19 @@ class HacsGenerator(Sequence):
         self._batch_size = batch_size
         self._indices = self._get_indices()
 
+        print(f"\n\nProcessing: {file_path}")
         if shuffle:
             print("Shuffling indices")
             np.random.shuffle(self._indices)
-
-        print(f"First 10 indices: {self._indices[:10]}")
+        print(f"First 10 indices: {self._indices[:10]}\n\n")
 
     def _get_indices(self):
         with h5py.File(self._file_path, 'r') as file_handle:
             labels_handle = file_handle[self._labels_key]
             if self._use_negative_samples:
-                indices = np.where(labels_handle[:] == 1)[0]
-            else:
                 indices = np.arange(len(labels_handle))
+            else:
+                indices = np.where(labels_handle[:] == 1)[0]
 
             return indices
 
@@ -70,7 +70,7 @@ class HacsGeneratorPartial(HacsGenerator):
         self._initial_step = 0
 
     def __len__(self):
-        return int(np.ceil(self._samples_per_part / self._batch_size))
+        return int(np.ceil(len(self._temp_indices) / self._batch_size))
 
     def __getitem__(self, index):
         selected_indices = self._temp_indices[index * self._batch_size:
