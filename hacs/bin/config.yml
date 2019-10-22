@@ -21,9 +21,9 @@ training:
     frames: frames
     labels: labels
   batch_size: 12
-  epochs: 150
-  learning_rate: 0.003
-  optimizer: radam
+  epochs: 10
+  learning_rate: 0.001
+  optimizer: adagrad
   losses:
     - categorical_crossentropy
   metrics:

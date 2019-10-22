@@ -1,5 +1,4 @@
 import fire
-import h5py
 import os
 import pickle
 import shutil
