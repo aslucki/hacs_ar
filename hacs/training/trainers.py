@@ -46,7 +46,7 @@ class C3DTrainer:
         elif optimizer.lower() == 'adagrad':
             optimizer = Adagrad(lr=self._learning_rate)
         elif optimizer.lower() == 'sgd':
-            optimizer = SGD(lr=self._learning_rate, momentum=0.3)
+            optimizer = SGD(lr=self._learning_rate, momentum=0.9)
         elif optimizer.lower() == 'rmsprop':
             optimizer = RMSprop(lr=self._learning_rate)
 
@@ -78,7 +78,7 @@ class C3DTrainer:
     def train(self, train_file_handle, validation_file_handle, epochs=10, batch_size=24):
         file_path = os.path.join(self._output_dir, 'model_{epoch:02d}_{val_loss:.2f}.h5')
         checkpoint_callback = ModelCheckpoint(file_path, monitor='val_loss', save_best_only=True)
-        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=20,
+        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=50,
                                                 mode='auto')
 
         tensorboard_callback = TensorBoard(log_dir=os.path.join(self._output_dir, 'logs'), histogram_freq=1,

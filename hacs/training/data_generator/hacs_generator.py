@@ -54,8 +54,7 @@ class HacsGenerator(Sequence):
 
             if self._use_negative_samples:
                 labels = file_handle[self._labels_key][indices]
-                one_hot_labels = labes_to_onehot(labels)
-                return frames, [classes, one_hot_labels]
+                return frames, [classes, labels]
 
             return frames, classes
 
@@ -103,9 +102,13 @@ class HacsGeneratorPartial(HacsGenerator):
         new_start = (self._initial_step + 1) * self._samples_per_part
         self._initial_step += 1
 
-        if new_start >= len(self._indices):
+        # Any part of data smaller than samples_per_part should be dropped
+        if new_start > len(self._indices) - self._samples_per_part:
             new_start = 0
             self._initial_step = 0
+
+        # Shuffle data after each epoch so they're equally present during multiple runs
+        np.random.shuffle(self._indices)
 
         print(f"\nProcessing {new_start}:{ new_start+self._samples_per_part} part of the data")
         self._temp_indices = self._indices[new_start: new_start+self._samples_per_part]
