@@ -79,7 +79,7 @@ def convert_to_floats(frames, max_value=255.):
 
 
 def smooth_labels(labels, factor=0.2):
-    labels = np.asarray(labels)
+    labels = np.asarray(labels, dtype=np.float16)
     if factor >= 1:
         raise ValueError("Factor must be a number between 0 and 1")
     labels[labels == 1] = 1-factor
