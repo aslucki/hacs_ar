@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from hacs.training.trainers import C3DTrainer
-from hacs.models.c3d import get_model
+from hacs.models.models import get_model
 
 
 def load_config(config_path):
@@ -51,7 +51,8 @@ def train_model(config_path):
                          use_labels=config['training']['use_negative_labels'],
                          data_file_keys=config['training']['data_file_keys'],
                          output_dir=experiment_output_dir,
-                         learning_rate=config['training']['learning_rate'])
+                         learning_rate=config['training']['learning_rate'],
+                         labels_smooth_factor=config['training']['labels_smooth_factor'])
 
     trainer.compile_model(optimizer=config['training']['optimizer'],
                           losses=config['training']['losses'],

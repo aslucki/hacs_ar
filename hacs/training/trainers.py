@@ -10,7 +10,7 @@ from hacs.training.data_generator.hacs_generator import HacsGeneratorPartial
 
 
 class C3DTrainer:
-    def __init__(self, model, use_labels, data_file_keys, output_dir, learning_rate):
+    def __init__(self, model, use_labels, data_file_keys, output_dir, learning_rate, labels_smooth_factor=0):
         self._model = model
         self._use_labels = use_labels
         self._data_file_keys = data_file_keys
@@ -18,6 +18,7 @@ class C3DTrainer:
         self._initial_epoch = 0
         self._learning_rate = learning_rate
         self._optimizer = None
+        self._labels_smooth_factor = labels_smooth_factor
 
     def _maybe_load_checkpoint(self):
         model_files = [file for file in os.listdir(self._output_dir)
@@ -51,7 +52,6 @@ class C3DTrainer:
             optimizer = RMSprop(lr=self._learning_rate)
 
         self._optimizer = optimizer
-
         return self._model.compile(optimizer=self._optimizer, loss=losses, metrics=metrics)
 
     def get_generator(self, file_handle, batch_size=24, validation=False):
@@ -63,7 +63,8 @@ class C3DTrainer:
                                          use_negative_samples=self._use_labels,
                                          batch_size=batch_size,
                                          shuffle=True,
-                                         samples_per_part=samples_per_part)
+                                         samples_per_part=samples_per_part,
+                                         labels_smooth_factor=self._labels_smooth_factor)
         return generator
 
 

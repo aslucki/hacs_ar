@@ -78,6 +78,16 @@ def convert_to_floats(frames, max_value=255.):
     return frames/max_value
 
 
+def smooth_labels(labels, factor=0.2):
+    labels = np.asarray(labels)
+    if factor >= 1:
+        raise ValueError("Factor must be a number between 0 and 1")
+    labels[labels == 1] = 1-factor
+    labels[labels == 0] = factor/(labels.shape[-1] - 1)
+
+    return labels
+
+
 def create_frames_array(videos, nb_frames, frame_shape):
     frames = []
     for video in videos:

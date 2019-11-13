@@ -14,18 +14,19 @@ processing:
   constant_num_frames: 60
 
 training:
-  model_name: resnet_3d
+  model_name: resnext
   use_negative_labels: False
   data_file_keys:
     classes: one_hot
     frames: frames
     labels: labels
   batch_size: 12
-  epochs: 15
-  learning_rate: 0.001
+  epochs: 20
+  learning_rate: 0.0003
   optimizer: adam
   losses:
     - categorical_crossentropy
+  labels_smooth_factor: 0.2
   metrics:
     - acc
   training_file: /project/videos_processed/training.h5
@@ -33,3 +34,4 @@ training:
   output_dir: /project/models
 
 
+# after 15 epochs change lr from 0.001 to 0.0003

@@ -2,13 +2,13 @@ import h5py
 import numpy as np
 from tensorflow.keras.utils import Sequence
 
-from .utils import create_frames_array, labes_to_onehot
+from .utils import create_frames_array, smooth_labels, labes_to_onehot
 
 
 class HacsGenerator(Sequence):
 
     def __init__(self, file_path, data_keys, nb_frames=16, frame_shape=(112, 112, 3),
-                 batch_size=16, use_negative_samples=False, shuffle=False):
+                 batch_size=16, use_negative_samples=False, shuffle=False, labels_smooth_factor=0):
         self._file_path = file_path
         self._labels_key = data_keys['labels']
         self._frames_key = data_keys['frames']
@@ -18,6 +18,7 @@ class HacsGenerator(Sequence):
         self._use_negative_samples = use_negative_samples
         self._batch_size = batch_size
         self._indices = self._get_indices()
+        self._labels_smooth_factor = labels_smooth_factor
 
         print(f"\n\nProcessing: {file_path}")
         if shuffle:
@@ -52,8 +53,11 @@ class HacsGenerator(Sequence):
             frames = create_frames_array(videos, nb_frames=self._nb_frames,
                                          frame_shape=self._frame_shape)
 
+            classes = smooth_labels(classes, self._labels_smooth_factor)
             if self._use_negative_samples:
                 labels = file_handle[self._labels_key][indices]
+                labels = labes_to_onehot(labels)
+                labels = smooth_labels(labels, self._labels_smooth_factor)
                 return frames, [classes, labels]
 
             return frames, classes
@@ -65,8 +69,10 @@ class HacsGeneratorPartial(HacsGenerator):
     """
 
     def __init__(self, file_path, data_keys, nb_frames=16, frame_shape=(112, 112, 3),
-                 batch_size=16, use_negative_samples=False, shuffle=False, samples_per_part=10000):
-        super().__init__(file_path, data_keys, nb_frames, frame_shape, batch_size, use_negative_samples, shuffle)
+                 batch_size=16, use_negative_samples=False, shuffle=False,
+                 samples_per_part=10000, **kwargs):
+        super().__init__(file_path, data_keys, nb_frames, frame_shape, batch_size,
+                         use_negative_samples, shuffle, **kwargs)
 
         self._temp_indices = self._indices[:samples_per_part]
         self._samples_per_part = samples_per_part
