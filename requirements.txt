@@ -10,7 +10,7 @@ memory-profiler
 numpy==1.17.1
 tensorflow-gpu==2.0.0-rc0
 tqdm
-opencv-python==4.1.0.25
+opencv-python==4.1.1.26
 pandas==0.24.0
 Pillow==5.2.0
 pytest==3.7.2
