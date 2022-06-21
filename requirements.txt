@@ -7,7 +7,7 @@ jupyterlab==0.35.6
 keras-rectified-adam==0.17.0
 matplotlib
 memory-profiler
-numpy==1.17.1
+numpy==1.22.0
 tensorflow-gpu==2.0.0-rc0
 tqdm
 opencv-python==4.1.0.25
